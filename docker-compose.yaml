@@ -1,0 +1,84 @@
+version: "3.9"
+
+services:
+  kafka-0:
+    image: bitnamilegacy/kafka:latest
+    ports:
+      - "9095:9095"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_SCHEMA_REGISTRY_URL=schema-registry:8081
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9094,1@kafka-1:9097,2@kafka-2:9101
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9093,CONTROLLER://:9094,EXTERNAL://:9095
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:9093,EXTERNAL://127.0.0.1:9095
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - kafka_0_data:/bitnami/kafka
+  kafka-1:
+    image: bitnamilegacy/kafka:latest
+    ports:
+      - "9098:9098"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_SCHEMA_REGISTRY_URL=schema-registry:8081
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9094,1@kafka-1:9097,2@kafka-2:9101
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9096,CONTROLLER://:9097,EXTERNAL://:9098
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9096,EXTERNAL://127.0.0.1:9098
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - kafka_1_data:/bitnami/kafka
+
+  kafka-2:
+    image: bitnamilegacy/kafka:latest
+    ports:
+      - "9103:9103"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_SCHEMA_REGISTRY_URL=schema-registry:8081
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9094,1@kafka-1:9097,2@kafka-2:9101
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9099,CONTROLLER://:9101,EXTERNAL://:9103
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:9099,EXTERNAL://127.0.0.1:9103
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - kafka_2_data:/bitnami/kafka
+
+  ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka-0:9093,kafka-1:9096,kafka-2:9099
+      - KAFKA_CLUSTERS_0_NAME=kraft
+
+  schema-registry:
+   image: confluentinc/cp-schema-registry:latest
+   depends_on:
+     - kafka-0
+     - kafka-1
+     - kafka-2
+   ports:
+     - "8081:8081"
+   environment:
+     SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-0:9093,kafka-1:9096,kafka-2:9099
+     SCHEMA_REGISTRY_HOST_NAME: schema-registry
+     SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+volumes:
+  kafka_0_data:
+  kafka_1_data:
+  kafka_2_data: 
