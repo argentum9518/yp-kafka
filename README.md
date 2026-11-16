@@ -1,44 +1,49 @@
-Имя топика и адреса брокеров, SchemaRegistry заданы переменными в коде приложения, при запуске двоичных файлов или файлов с расширение .go дополнительно никакие параметры указывать не нужно.
+###Создание кластера Kafka###
+1. Загружаем файл docker-compose.yaml
 
-В качестве структуры данных используется структура с именем payload, содержащий в себе 3 поля, 2 из которых имеют тип данных - целое число, 3-е имеет тип данных строка. Каждое поле маппится в json.
+2. В директории с файлом docker-compose выполняем команду docker-compose up -d или docker compose up -d в случае естановленного в системе пакета docker-compose-v2
 
-Для сериализации/десериализации данных используется пакет jsonschema.
+3. Выполняем команду docker ps в выводе должны быть контейнеры kafka[101..103] со статусом UP
 
-Для проверки корректности выполнения задания можно использовать следующие тесты:
+###Создание топиков###
 
-1. Изменить значение переменной count на значение менее 10 и запустить приложение заново. В таком случае лаг в consumer batch_group будет расти до тех пор, пока батч из сообщений не достигнет значения 10, при этом сообщения в consumer group single_group, будут вычитываться успешно.
+1. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic filtered_messages --replication-factor 3 --partitions 1
 
-2. При изменении значения переменной address, приложение при неуспешной попытке подключения к брокеру, будет выводить информационные сообщения в лог консоли, при этом не завершаясь, что было одним из условий выполнения практического задания.
+2. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic messages --replication-factor 3 --partitions 1
 
-3. Выполненным условием накопления батча в минимум 10 сообщений для обработки сообщений консьюмером batchConsumer, можно считать вывод лога с десериализованными сообщениями вида:
- "Batch consumer: practical 10
-{ID:15 Name:transport Group:189}"
-В котором число, следующее за именем топика, является порядковым номером сообшения из батча.
+3. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic blocked_users --replication-factor 3 --partitions 1
 
-4. Выполненым условием вывода десериализованного сообщения можно считать вывод лога вида:
-Batch consumer: practical 6
-{ID:15 Name:transport Group:189} и лога
+4. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic forbidden_words --replication-factor 3 --partitions 1
 
-Single consumer practical:
-{ID:15 Name:transport Group:189}, 
+###Сборка###
+1. Для сборки бинаря выполнить команду go build . в корне проекта
 
-которые отражают в себе выполнение обработки и десериализации сообшения консюмером singleConsumer и batchCnsumer, соответственно.
+2. В корне появится бинарь с именем msgfilter
 
-Для корректного запуска приложения необходимо:
-1. Создать кластер kafka из 3 инстансов. Для этого необходимо выполнить комманду docker-compose up -d, находясь в дирректории, в которой располагается файл docker-compose.yaml.
+###Запуск###
 
-2. Выполнить комманду docker ps для проверки, что все созданные контейцнерв находятся в статусе Healthy(UP)
+1. Для запуска приложения в корне выполнить команду ./msgfilter
 
-3. Выполнить комманду docker exec -ti kafka-0 bash, попасть в оболочку контейнера
+###Тестирование###
 
-4. При помощи команды afka-topics.sh --create --bootstrap-server 127.0.0.1:9095  --topic practical --partitions 3 --replication-factor 2 , создать топик practical с 2-мя репликами и 3-мя партициями.
+1. Команда для блокировки пользователя
+docker exec -ti kafka101 bash -c "echo 'root:{\"user_id\":\"root\",\"blocked\":true}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic blocked_users --property "parse.key=true" --property "key.separator=:""
 
-5. Выполнить комманду kafka-topics.sh --describe --bootstrap-server 127.0.0.1:9095  --topic practical, для проверки, что топик создан
+2. Проверка на отправку заблокированным пользователем (сообщение должно появится только в топике messages, в топик filtered_messages сообщение попадать не должно)
+docker exec -ti kafka101 bash -c "echo '{\"from\":\"root\",\"to\":\"test\",\"content\":\"Test\"}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic messages"
 
-6. При помощи клавиш Ctrl + C, выйти из оболочки контейнера
+3. Считывание содержимого топика filtered_messages
+docker exec -ti kafka101 bash -c "kafka-console-consumer --bootstrap-server 172.16.255.242:19092 --topic filtered_messages --from-beginning" - Вывод должен быть пустым
 
-7. Запустить бинарь producer, располагающийся в корне репозитория, тем самым инициализирую запись 10-ти сообщений в топик practical
+4. Добавление ключевого слова, которое фильтруем в данном случае важен именно ключ сообщения
+ docker exec -ti kafka101 bash -c "echo 'spam:{\"word\":\"spam\",\"remove\":false}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic forbidden_words --property "parse.key=true" --property "key.separator=:"" 
 
-8. Для запуска consumer, необходимо запустить бинарь consumer, располагающийся в корне репозитория
+5. Отправка сообщения с содержанием "нецензурного" слова 
+docker exec -ti kafka101 bash -c "echo '{\"from\":\"tor\",\"to\":\"test\",\"content\":\"This is message is a spam\"}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic messages"  
+Для последующей проверки выполняем команду docker exec -ti kafka101 bash -c "kafka-console-consumer --bootstrap-server 172.16.255.242:19092 --topic filtered_messages --from-beginning" в выводе "нецензурное" слово будет заменено "звездочками"
 
+6. Rоманда для разблокировки пользователя
+docker exec -ti kafka101 bash -c "echo 'root:{\"user_id\":\"root\",\"blocked\":false}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic blocked_users --property "parse.key=true" --property "key.separator=:""
 
+7. Проверка разблокировки пользователя (сообщение должно появится только в топике filtered_messages)
+docker exec -ti kafka101 bash -c "echo '{\"from\":\"root\",\"to\":\"test\",\"content\":\"Test\"}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic messages"
