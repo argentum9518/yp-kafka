@@ -1,8 +1,9 @@
 {
+    "name": "pg-connector",
     "config": {
         "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-        "database.dbname": "inventory",
-        "database.hostname": "postgres",
+        "database.dbname": "shop",
+        "database.hostname": "localhost",
         "database.password": "postgres",
         "database.port": "5432",
         "database.user": "postgres",
@@ -14,5 +15,5 @@
         "tasks.max": "1",
         "topic.prefix": "cdc"
     },
-    "name": "pg-connector"
+    
 }
