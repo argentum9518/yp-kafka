@@ -19,7 +19,6 @@ services:
       - "max_replication_slots=4"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     network_mode: host
 
   kafka101:
@@ -111,6 +110,7 @@ services:
       STATUS_STORAGE_REPLICATION_FACTOR: 3
       KAFKA_OPTS: "-javaagent:/kafka/etc/jmx_prometheus_javaagent.jar=9404:/kafka/etc/jmx-exporter-config.yml"
     volumes:
+      - ./jmx_exporter/jmx_prometheus_javaagent-1.7.0.jar:/kafka/etc/jmx_prometheus_javaagent.jar
       - ./jmx_exporter/config.yml:/kafka/etc/jmx-exporter-config.yml
     depends_on:
       - kafka101
@@ -122,12 +122,14 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    user: root
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
       - kafka-connect
+    network_mode: host
 
   grafana:
     image: grafana/grafana:latest
@@ -138,6 +140,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     depends_on:
       - prometheus
+    network_mode: host
 
 volumes:
   postgres-data:
