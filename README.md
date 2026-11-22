@@ -1,49 +1,36 @@
-###Создание кластера Kafka###
+###Создание кластера Kafka + Kafka-connect + Prometheus + Grafana + Debezium###
 1. Загружаем файл docker-compose.yaml
 
 2. В директории с файлом docker-compose выполняем команду docker-compose up -d или docker compose up -d в случае естановленного в системе пакета docker-compose-v2
 
-3. Выполняем команду docker ps в выводе должны быть контейнеры kafka[101..103] со статусом UP
+3. Выполняем команду docker ps в выводе должны быть контейнеры со статусом UP
 
-###Создание топиков###
+###Регистрация коннектора###
+1. Выполняем команду:
 
-1. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic filtered_messages --replication-factor 3 --partitions 1
+curl -X POST -H "Content-Type: application/json"  --data @pg-connector.json http://localhost:8083/connectors
 
-2. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic messages --replication-factor 3 --partitions 1
+2. Для проверки статуса коннектора выполняем команду:
 
-3. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic blocked_users --replication-factor 3 --partitions 1
+curl http://localhost:8083/connectors/pg-connector/status | jq
 
-4. docker exec -ti kafka101 kafka-topics --bootstrap-server 172.16.255.242:19092 --create --topic forbidden_words --replication-factor 3 --partitions 1
+Коннектор, и его задача должны находятся в состоянии RUNNING.
 
-###Сборка###
-1. Для сборки бинаря выполнить команду go build . в корне проекта
+###Добавление тестовых данных в PostgreSQL:
 
-2. В корне появится бинарь с именем msgfilter
+1. Для добавления тестовых данных выполняем команду:
 
-###Запуск###
+docker exec -i postgres psql -U postgres -d shop <<'SQL'
+INSERT INTO users (name, email) VALUES
+  ('John Doe', 'john@example.com'),
+  ('Jane Smith', 'jane@example.com'),
+  ('Alice Johnson', 'alice@example.com'),
+  ('Bob Brown', 'bob@example.com');
 
-1. Для запуска приложения в корне выполнить команду ./msgfilter
-
-###Тестирование###
-
-1. Команда для блокировки пользователя
-docker exec -ti kafka101 bash -c "echo 'root:{\"user_id\":\"root\",\"blocked\":true}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic blocked_users --property "parse.key=true" --property "key.separator=:""
-
-2. Проверка на отправку заблокированным пользователем (сообщение должно появится только в топике messages, в топик filtered_messages сообщение попадать не должно)
-docker exec -ti kafka101 bash -c "echo '{\"from\":\"root\",\"to\":\"test\",\"content\":\"Test\"}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic messages"
-
-3. Считывание содержимого топика filtered_messages
-docker exec -ti kafka101 bash -c "kafka-console-consumer --bootstrap-server 172.16.255.242:19092 --topic filtered_messages --from-beginning" - Вывод должен быть пустым
-
-4. Добавление ключевого слова, которое фильтруем в данном случае важен именно ключ сообщения
- docker exec -ti kafka101 bash -c "echo 'spam:{\"word\":\"spam\",\"remove\":false}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic forbidden_words --property "parse.key=true" --property "key.separator=:"" 
-
-5. Отправка сообщения с содержанием "нецензурного" слова 
-docker exec -ti kafka101 bash -c "echo '{\"from\":\"tor\",\"to\":\"test\",\"content\":\"This is message is a spam\"}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic messages"  
-Для последующей проверки выполняем команду docker exec -ti kafka101 bash -c "kafka-console-consumer --bootstrap-server 172.16.255.242:19092 --topic filtered_messages --from-beginning" в выводе "нецензурное" слово будет заменено "звездочками"
-
-6. Rоманда для разблокировки пользователя
-docker exec -ti kafka101 bash -c "echo 'root:{\"user_id\":\"root\",\"blocked\":false}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic blocked_users --property "parse.key=true" --property "key.separator=:""
-
-7. Проверка разблокировки пользователя (сообщение должно появится только в топике filtered_messages)
-docker exec -ti kafka101 bash -c "echo '{\"from\":\"root\",\"to\":\"test\",\"content\":\"Test\"}' | kafka-console-producer --bootstrap-server 172.16.255.242:19092 --topic messages"
+INSERT INTO orders (user_id, product_name, quantity) VALUES
+  (1, 'Product A', 2),
+  (1, 'Product B', 1),
+  (2, 'Product C', 5),
+  (3, 'Product D', 3),
+  (4, 'Product E', 4);
+SQL
