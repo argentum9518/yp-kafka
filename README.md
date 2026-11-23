@@ -38,7 +38,7 @@ connect-status
 
 9. Для создания БД и таблиц в ней необходимо выполнить Shell-скрипт из директории postgres
 
-./postgres/init.sh
+chmod 744 ./postgres/init.sh && ./postgres/init.sh
 
 
 ###Регистрация коннектора###
@@ -56,7 +56,7 @@ curl http://localhost:8083/connectors/pg-connector/status | jq
 
 1. Для добавления тестовых данных выполняем Shell-скрипт из директории postgres
 
-./postgres/add_data.sh
+chmod 744 ./postgres/add_data.sh && ./postgres/add_data.sh
 
 2. После добавления тестовых данных проверим наличие cdc-топиков при помощи команды:
 
