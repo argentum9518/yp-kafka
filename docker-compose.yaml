@@ -1,26 +1,5 @@
 version: "3.9"
 services:
-  postgres:
-    image: debezium/postgres:16
-    container_name: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: shop
-    command:
-      - "postgres"
-      - "-c"
-      - "wal_level=logical"
-      - "-c"
-      - "max_wal_senders=4"
-      - "-c"
-      - "max_replication_slots=4"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    network_mode: host
-
   kafka101:
     image: "confluentinc/cp-kafka:7.4.0"
     restart: always
@@ -34,16 +13,38 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: '101@localhost:19093,102@localhost:29093,103@localhost:39093'
       KAFKA_PROCESS_ROLES: 'broker,controller' 
       KAFKA_JMX_PORT: 9991
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:19092,PLAINTEXT_HOST://localhost:19094'
-      KAFKA_LISTENERS: 'PLAINTEXT://localhost:19092,PLAINTEXT_HOST://0.0.0.0:19094,CONTROLLER://localhost:19093'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:19092'
+      KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorized
+      KAFKA_LISTENERS: 'SSL://localhost:19092,CONTROLLER://localhost:19093'
+      KAFKA_LISTENERS_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_LISTENERS_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG: >
+      org.apache.kafka.common.security.plain.PlainLoginModule required
+      username="admin"
+      password="{ADMIN_PASS_PLAIN}";
+      KAFKA_LISTENERS_NAME_SSL_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+      KAFKA_LISTENERS_NAME_SSL_SCRAM-SHA-512_SASL_JAAS_CONFIG: >
+      org.apache.kafka.common.security.scram.ScramLoginModule required
+      username="admin"
+      password="{ADMIN_PASS_SCRAM}";
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SSL:SASL_SSL'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN,SCRAM-SHA-512'
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
+      KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL: PLAIN
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka101.keystore.pkcs12
+      KAFKA_SSL_KEYSTORE_PASSWORD: ${KEYSTORE_PASS}
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka101.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: ${TRUSTSTORE_PASS}
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_SUPER_USERS: admin
       CONFLUENT_METRICS_ENABLE: 'false'
     network_mode: host
+    volumes:
+      ./certs/buffer:/etc/kafka/secrets
 
   kafka102:
     image: "confluentinc/cp-kafka:7.4.0"
@@ -58,16 +59,37 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: '101@localhost:19093,102@localhost:29093,103@localhost:39093'
       KAFKA_PROCESS_ROLES: 'broker,controller' 
       KAFKA_JMX_PORT: 9992
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:29092,PLAINTEXT_HOST://localhost:29094'
-      KAFKA_LISTENERS: 'PLAINTEXT://localhost:29092,PLAINTEXT_HOST://0.0.0.0:29094,CONTROLLER://localhost:29093'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:29092'
+      KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorized
+      KAFKA_LISTENERS: 'SSL://localhost:29092,CONTROLLER://localhost:29093'
+      KAFKA_LISTENERS_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_LISTENERS_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG: >
+      org.apache.kafka.common.security.plain.PlainLoginModule required
+      username="admin"
+      password="{ADMIN_PASS_PLAIN}";
+      KAFKA_LISTENERS_NAME_SSL_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+      KAFKA_LISTENERS_NAME_SSL_SCRAM-SHA-512_SASL_JAAS_CONFIG: >
+      org.apache.kafka.common.security.scram.ScramLoginModule required
+      username="admin"
+      password="{ADMIN_PASS_SCRAM}";
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SSL:SASL_SSL'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN,SCRAM-SHA-512'
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
+      KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL: PLAIN
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka102.keystore.pkcs12
+      KAFKA_SSL_KEYSTORE_PASSWORD: ${KEYSTORE_PASS}
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka102.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: ${TRUSTSTORE_PASS}
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_SUPER_USERS: admin
     network_mode: host
+    volumes:
+      ./certs/buffer:/etc/kafka/secrets
 
   kafka103:  
     image: "confluentinc/cp-kafka:7.4.0"
@@ -82,65 +104,34 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: '101@localhost:19093,102@localhost:29093,103@localhost:39093'
       KAFKA_PROCESS_ROLES: 'broker,controller'
       KAFKA_JMX_PORT: 9993
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:39092,PLAINTEXT_HOST://localhost:39095'
-      KAFKA_LISTENERS: 'PLAINTEXT://localhost:39092,PLAINTEXT_HOST://0.0.0.0:39095,CONTROLLER://localhost:39093'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:39092'
+      KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorized
+      KAFKA_LISTENERS: 'SSL://localhost:39092,CONTROLLER://localhost:39093'
+      KAFKA_LISTENERS_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_LISTENERS_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG: >
+      org.apache.kafka.common.security.plain.PlainLoginModule required
+      username="admin"
+      password="${ADMIN_PASS_PLAIN}";
+      KAFKA_LISTENERS_NAME_SSL_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+      KAFKA_LISTENERS_NAME_SSL_SCRAM-SHA-512_SASL_JAAS_CONFIG: >
+      org.apache.kafka.common.security.scram.ScramLoginModule required
+      username="admin"
+      password="${ADMIN_PASS_SCRAM}";
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SSL:SASL_SSL'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN,SCRAM-SHA-512'
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
+      KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL: PLAIN
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka103.keystore.pkcs12
+      KAFKA_SSL_KEYSTORE_PASSWORD: ${KEYSTORE_PASS}
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka103.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: ${TRUSTSTORE_PASS}
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      CONFLUENT_METRICS_ENABLE: 'false'      
+      KAFKA_SUPER_USERS: admin      
     network_mode: host
-
-  kafka-connect:
-    image: quay.io/debezium/connect:3.5
-    container_name: kafka-connect
-    ports:
-      - "8083:8083"
-      - "9404:9404"
-    environment:
-      BOOTSTRAP_SERVERS: localhost:19092, localhost:29092, localhost:39092
-      GROUP_ID: connect-cluster
-      CONFIG_STORAGE_TOPIC: connect-configs
-      OFFSET_STORAGE_TOPIC: connect-offsets
-      STATUS_STORAGE_TOPIC: connect-status
-      CONFIG_STORAGE_REPLICATION_FACTOR: 3
-      OFFSET_STORAGE_REPLICATION_FACTOR: 3
-      STATUS_STORAGE_REPLICATION_FACTOR: 3
-      KAFKA_OPTS: "-javaagent:/kafka/etc/jmx_prometheus_javaagent.jar=9404:/kafka/etc/jmx-exporter-config.yml"
     volumes:
-      - ./jmx_exporter/jmx_prometheus_javaagent-1.7.0.jar:/kafka/etc/jmx_prometheus_javaagent.jar
-      - ./jmx_exporter/config.yml:/kafka/etc/jmx-exporter-config.yml
-    depends_on:
-      - kafka101
-      - kafka102
-      - kafka103
-      - postgres
-    network_mode: host
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    user: root
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    depends_on:
-      - kafka-connect
-    network_mode: host
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    depends_on:
-      - prometheus
-    network_mode: host
-
-volumes:
-  postgres-data:
+      ./certs/buffer:/etc/kafka/secrets

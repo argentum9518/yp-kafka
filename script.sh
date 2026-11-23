@@ -1,0 +1,10 @@
+docker exec -it kafka101 kafka-topics --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --create --topic topic-1 --replication-factor 3 --partitions 1
+docker exec -it kafka101 kafka-topics --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --create --topic topic-2 --replication-factor 3 --partitions 1
+docker exec -it kafka101 kafka-configs --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf kafka-configs --bootstrap-server 172.16.255.242:19092 --alter --add-config SCRAM-SHA-512=[password=qwerty123] --entity-type users --user producer
+docker exec -it kafka101 kafka-configs --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf kafka-configs --bootstrap-server 172.16.255.242:19092 --alter --add-config SCRAM-SHA-512=[password=qwerty123] --entity-type users --user consumer
+docker exec -it kafka101 kafka-acls --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --add --allow-principal User: producer  --operation Write --topic topic-1
+docker exec -it kafka101 kafka-acls --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --add --allow-principal User: producer  --operation Describe --topic topic-1
+docker exec -it kafka101 kafka-acls --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --add --allow-principal User: producer  --operation Describe --topic topic-1
+docker exec -it kafka101 kafka-acls --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --add --allow-principal User: consumer  --operation Read --topic topic-1
+docker exec -it kafka101 kafka-acls --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --add --allow-principal User: producer  --operation Describe --topic topic-2
+docker exec -it kafka101 kafka-acls --bootstrap-server localhost:19092  --command-config /etc/kafka/secrets/client_ssl.conf --add --allow-principal User: producer  --operation Write --topic topic-2
