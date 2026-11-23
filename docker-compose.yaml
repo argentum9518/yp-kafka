@@ -18,14 +18,14 @@ services:
       KAFKA_LISTENERS: 'SSL://localhost:19092,CONTROLLER://localhost:19093'
       KAFKA_LISTENERS_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: PLAIN
       KAFKA_LISTENERS_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG: >
-      org.apache.kafka.common.security.plain.PlainLoginModule required
-      username="admin"
-      password="{ADMIN_PASS_PLAIN}";
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="admin"
+        password="{ADMIN_PASS_PLAIN}";
       KAFKA_LISTENERS_NAME_SSL_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
       KAFKA_LISTENERS_NAME_SSL_SCRAM-SHA-512_SASL_JAAS_CONFIG: >
-      org.apache.kafka.common.security.scram.ScramLoginModule required
-      username="admin"
-      password="{ADMIN_PASS_SCRAM}";
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username="admin"
+        password="{ADMIN_PASS_SCRAM}";
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SSL:SASL_SSL'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
@@ -44,7 +44,7 @@ services:
       CONFLUENT_METRICS_ENABLE: 'false'
     network_mode: host
     volumes:
-      ./certs/buffer:/etc/kafka/secrets
+      - ./certs/buffer:/etc/kafka/secrets
 
   kafka102:
     image: "confluentinc/cp-kafka:7.4.0"
@@ -64,14 +64,14 @@ services:
       KAFKA_LISTENERS: 'SSL://localhost:29092,CONTROLLER://localhost:29093'
       KAFKA_LISTENERS_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: PLAIN
       KAFKA_LISTENERS_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG: >
-      org.apache.kafka.common.security.plain.PlainLoginModule required
-      username="admin"
-      password="{ADMIN_PASS_PLAIN}";
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="admin"
+        password="{ADMIN_PASS_PLAIN}";
       KAFKA_LISTENERS_NAME_SSL_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
       KAFKA_LISTENERS_NAME_SSL_SCRAM-SHA-512_SASL_JAAS_CONFIG: >
-      org.apache.kafka.common.security.scram.ScramLoginModule required
-      username="admin"
-      password="{ADMIN_PASS_SCRAM}";
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username="admin"
+        password="{ADMIN_PASS_SCRAM}";
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SSL:SASL_SSL'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
@@ -89,7 +89,7 @@ services:
       KAFKA_SUPER_USERS: admin
     network_mode: host
     volumes:
-      ./certs/buffer:/etc/kafka/secrets
+      - ./certs/buffer:/etc/kafka/secrets
 
   kafka103:  
     image: "confluentinc/cp-kafka:7.4.0"
@@ -109,14 +109,14 @@ services:
       KAFKA_LISTENERS: 'SSL://localhost:39092,CONTROLLER://localhost:39093'
       KAFKA_LISTENERS_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: PLAIN
       KAFKA_LISTENERS_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG: >
-      org.apache.kafka.common.security.plain.PlainLoginModule required
-      username="admin"
-      password="${ADMIN_PASS_PLAIN}";
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="admin"
+        password="${ADMIN_PASS_PLAIN}";
       KAFKA_LISTENERS_NAME_SSL_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
       KAFKA_LISTENERS_NAME_SSL_SCRAM-SHA-512_SASL_JAAS_CONFIG: >
-      org.apache.kafka.common.security.scram.ScramLoginModule required
-      username="admin"
-      password="${ADMIN_PASS_SCRAM}";
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username="admin"
+        password="${ADMIN_PASS_SCRAM}";
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SSL:SASL_SSL'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
@@ -134,4 +134,4 @@ services:
       KAFKA_SUPER_USERS: admin      
     network_mode: host
     volumes:
-      ./certs/buffer:/etc/kafka/secrets
+      - ./certs/buffer:/etc/kafka/secrets
